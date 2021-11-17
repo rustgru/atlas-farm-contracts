@@ -7,6 +7,7 @@ mod calculator;
 
 declare_id!("648s29idGPQ5mJ8fSgCQZudQYBXXrYjLva8aaAdf2795");
 
+
 // Transaction instructions
 #[derive(Accounts)]
 pub struct Create<'info> {
