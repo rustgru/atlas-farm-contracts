@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::mem::size_of;
 
-declare_id!("FBHjXGXUa65hSCzyfMhkcLzu2U3HByNqcWMuDUUHURLa");
+declare_id!("DEXqAUczH6bFWfJ5ePjRmkJkAWj9ocE27pMKvYGyNKAD");
 
 const ACC_PRECISION: u128 = 100_000_000_000;
 
@@ -234,6 +234,7 @@ pub struct CreateFarmPool<'info> {
         seeds = [
             b"pool vault".as_ref(),
             token_mint.key().as_ref(), 
+            pool.key().as_ref(),
         ],
         bump = token_bump,
         payer = authority)]
@@ -247,6 +248,7 @@ pub struct CreateFarmPool<'info> {
         seeds = [
             b"reward vault".as_ref(),
             reward_mint.key().as_ref(), 
+            pool.key().as_ref(),
         ],
         bump = reward_bump,
         payer = authority)]

@@ -1,21 +1,21 @@
 [programs.localnet]
-atlas_farming = "FBHjXGXUa65hSCzyfMhkcLzu2U3HByNqcWMuDUUHURLa"
+atlas_farming = "DEXqAUczH6bFWfJ5ePjRmkJkAWj9ocE27pMKvYGyNKAD"
 
 [programs.devnet]
-atlas_farming = "FBHjXGXUa65hSCzyfMhkcLzu2U3HByNqcWMuDUUHURLa"
+atlas_farming = "DEXqAUczH6bFWfJ5ePjRmkJkAWj9ocE27pMKvYGyNKAD"
 
 [programs.testnet]
-atlas_farming = "FBHjXGXUa65hSCzyfMhkcLzu2U3HByNqcWMuDUUHURLa"
+atlas_farming = "DEXqAUczH6bFWfJ5ePjRmkJkAWj9ocE27pMKvYGyNKAD"
 
 [programs.mainnet]
-atlas_farming = "FBHjXGXUa65hSCzyfMhkcLzu2U3HByNqcWMuDUUHURLa"
+atlas_farming = "DEXqAUczH6bFWfJ5ePjRmkJkAWj9ocE27pMKvYGyNKAD"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "mainnet"
-wallet = "~/.config/solana/id.json"
+cluster = "localnet"
+wallet = "./wallet.json"
 
 [scripts]
 test = "mocha -t 1000000 tests/"
