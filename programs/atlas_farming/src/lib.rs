@@ -30,12 +30,13 @@ pub mod atlas_farming {
         reward_bump: u8,
         token_per_second: u64,
     ) -> ProgramResult {
-        let mut state = _ctx.accounts.state.load_mut()?;
+
         for pool_acc in _ctx.remaining_accounts.iter() {
             let loader = Loader::<FarmPoolAccount>::try_from(&_ctx.program_id, &pool_acc)?;
             loader.load_mut()?.update(&_ctx.accounts.clock)?;
         }
 
+        let mut state = _ctx.accounts.state.load_mut()?;
         let pool = &mut _ctx.accounts.pool.load_init()?;
         pool.bump = bump;
         pool.token_mint = _ctx.accounts.token_mint.key();
@@ -75,7 +76,7 @@ pub mod atlas_farming {
         Ok(())
     }
 
-    pub fn change_tokens_per_second(
+    pub fn change_token_per_second(
         _ctx: Context<ChangeEmissionRate>,
         token_per_second: u64,
     ) -> ProgramResult {
@@ -170,20 +171,25 @@ pub mod atlas_farming {
 
         let total_reward = user.reward_amount.try_into().unwrap();
 
+        user.reward_amount = 0;
+        user.calculate_reward_debt(&pool)?;
+
+        drop(pool);
+
+        let new_pool = _ctx.accounts.pool.load()?;
+
         let cpi_accounts = Transfer {
             from: _ctx.accounts.reward_vault.to_account_info(),
             to: _ctx.accounts.user_vault.to_account_info(),
-            authority: _ctx.accounts.state.to_account_info(),
+            authority: _ctx.accounts.pool.to_account_info(),
         };
 
-        let seeds = &[b"state".as_ref(), &[state.bump]];
+        let seeds = &[new_pool.token_mint.as_ref(), &[new_pool.bump]];
         let signer = &[&seeds[..]];
         let cpi_program = _ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        token::transfer(cpi_ctx, total_reward)?;
 
-        user.reward_amount = 0;
-        user.calculate_reward_debt(&pool)?;
+        token::transfer(cpi_ctx, total_reward)?;
         
         Ok(())
     }
@@ -232,13 +238,13 @@ pub struct CreateFarmPool<'info> {
         token::mint = token_mint,
         token::authority = pool,
         seeds = [
-            b"pool vault".as_ref(),
+            b"pool-vault".as_ref(),
             token_mint.key().as_ref(), 
             pool.key().as_ref(),
         ],
         bump = token_bump,
         payer = authority)]
-    pub token_vault: Account<'info, TokenAccount>,
+    pub token_vault: Box<Account<'info, TokenAccount>>,
     pub token_mint: Box<Account<'info, Mint>>,
 
     #[account(
@@ -246,13 +252,13 @@ pub struct CreateFarmPool<'info> {
         token::mint = reward_mint,
         token::authority = pool,
         seeds = [
-            b"reward vault".as_ref(),
+            b"reward-vault".as_ref(),
             reward_mint.key().as_ref(), 
             pool.key().as_ref(),
         ],
         bump = reward_bump,
         payer = authority)]
-    pub reward_vault: Account<'info, TokenAccount>,
+    pub reward_vault: Box<Account<'info, TokenAccount>>,
     pub reward_mint: Box<Account<'info, Mint>>,
     
     pub system_program: Program<'info, System>,
@@ -299,7 +305,7 @@ pub struct FundToFarm<'info> {
         seeds = [pool.load()?.token_mint.key().as_ref()], 
         bump = pool.load()?.bump, 
         has_one = authority, 
-        close = authority)]
+        )]
     pub pool: Loader<'info, FarmPoolAccount>,
 
     pub authority: Signer<'info>,
@@ -326,7 +332,7 @@ pub struct ChangeEmissionRate<'info> {
         seeds = [pool.load()?.token_mint.key().as_ref()], 
         bump = pool.load()?.bump, 
         has_one = authority, 
-        close = authority)]
+        )]
     pub pool: Loader<'info, FarmPoolAccount>,
 
     pub authority: Signer<'info>,
@@ -422,7 +428,10 @@ pub struct Harvest<'info> {
     #[account(mut, constraint = reward_vault.key() == pool.load()?.reward_vault)]
     pub reward_vault: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = user_vault.owner == authority.key())]
+    #[account(mut, 
+        constraint = user_vault.owner == authority.key(),
+        constraint = user_vault.mint == pool.load()?.reward_mint,
+    )]
     pub user_vault: Box<Account<'info, TokenAccount>>,
     
     pub system_program: Program<'info, System>,
